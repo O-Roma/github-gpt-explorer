@@ -27,13 +27,18 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@dqbd/tiktoken": "^1.0.3",
     "dotenv": "^16.0.3",
-    "langchain": "^0.0.39"
+    "hnswlib-node": "^1.4.2",
+    "langchain": "^0.0.48",
+    "node-fetch": "^3.3.1",
+    "prompt-sync": "^4.2.0"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.2",
     "@types/js-yaml": "^4",
     "@types/node": "^18.15.5",
+    "@types/prompt-sync": "^4.2.0",
     "@typescript-eslint/eslint-plugin": "^5.51.0",
     "@typescript-eslint/parser": "^5.51.0",
     "eslint": "^8.33.0",
@@ -43,6 +48,6 @@
     "eslint-plugin-prettier": "^4.2.1",
     "prettier": "^2.8.3",
     "tsx": "^3.12.3",
-    "typescript": "^4.9.5"
+    "typescript": "^5.1.0-dev.20230405"
   }
 }
