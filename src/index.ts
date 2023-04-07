@@ -5,31 +5,37 @@ import { ConversationalRetrievalQAChain } from "langchain/chains";
 import { HNSWLib } from "langchain/vectorstores";
 import { OpenAIEmbeddings } from "langchain/embeddings";
 import prompt from 'prompt-sync';
-import { TokenTextSplitter } from "langchain/text_splitter";
-
-
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 
 dotenv.config();
 
 const model = new OpenAI({
   modelName: "gpt-3.5-turbo",
   openAIApiKey: process.env.OPENAI_API_KEY,
-});
+  });
 
 const loader = new GithubRepoLoader(
   "https://github.com/domeccleston/langchain-ts-starter",
   { branch: "main", recursive: false, unknown: "warn" }
 );
 
-const splitter = new TokenTextSplitter({
-  encodingName: "gpt2",
-  chunkSize: 10,
-  chunkOverlap: 0,
+const splitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 2000,
+  chunkOverlap: 200,
 });
 
-const docs = await loader.loadAndSplit(splitter);
+const directory = "temp/lanchain-ts-starter";
+let vectorStore;
 
-const vectorStore = await HNSWLib.fromDocuments(docs, new OpenAIEmbeddings());
+// Check if the vector store exists in the directory
+try {
+  vectorStore = await HNSWLib.load(directory, new OpenAIEmbeddings());
+} catch (e) {
+  console.log("Vector store not found in directory. Generating vector store from documents...");
+  const docs = await loader.loadAndSplit(splitter);
+  vectorStore = await HNSWLib.fromDocuments(docs, new OpenAIEmbeddings());
+  await vectorStore.save(directory);
+}
 
 const chain = ConversationalRetrievalQAChain.fromLLM(
   model,
@@ -51,7 +57,7 @@ async function askQuestion(chatHistory: string[]) {
   }
 }
 
-(async function() {
+(async function () {
   const chatHistory: string[] = [];
   await askQuestion(chatHistory); // initial call with empty chat history
 })();
