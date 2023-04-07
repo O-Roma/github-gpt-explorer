@@ -6,16 +6,20 @@ import { HNSWLib } from "langchain/vectorstores";
 import { OpenAIEmbeddings } from "langchain/embeddings";
 import prompt from 'prompt-sync';
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import {
+  MODEL_NAME,
+  REPO_URL,
+  VECTOR_STORE_DIR,
+  SPLITTER_CONFIG,
+  PROMPT_CONFIG,
+  FOLLOW_UP_QUESTION_PROMPT,
+} from './config';
 
 dotenv.config();
 
-const MODEL_NAME = "gpt-3.5-turbo";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const REPO_URL = "https://github.com/domeccleston/langchain-ts-starter";
-const VECTOR_STORE_DIR = "temp/lanchain-ts-starter";
-const SPLITTER_CONFIG = { chunkSize: 2000, chunkOverlap: 200 };
-const PROMPT_CONFIG = { sigint: true };
-const FOLLOW_UP_QUESTION_PROMPT = "Any follow up questions? (y/n) ";
+
+
 
 // Create an instance of the OpenAI model
 const model = new OpenAI({
