@@ -9,55 +9,58 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 
 dotenv.config();
 
+const MODEL_NAME = "gpt-3.5-turbo";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const REPO_URL = "https://github.com/domeccleston/langchain-ts-starter";
+const VECTOR_STORE_DIR = "temp/lanchain-ts-starter";
+const SPLITTER_CONFIG = { chunkSize: 2000, chunkOverlap: 200 };
+const PROMPT_CONFIG = { sigint: true };
+const FOLLOW_UP_QUESTION_PROMPT = "Any follow up questions? (y/n) ";
+
+// Create an instance of the OpenAI model
 const model = new OpenAI({
-  modelName: "gpt-3.5-turbo",
-  openAIApiKey: process.env.OPENAI_API_KEY,
-  });
-
-const loader = new GithubRepoLoader(
-  "https://github.com/domeccleston/langchain-ts-starter",
-  { branch: "main", recursive: false, unknown: "warn" }
-);
-
-const splitter = new RecursiveCharacterTextSplitter({
-  chunkSize: 2000,
-  chunkOverlap: 200,
+  modelName: MODEL_NAME,
+  openAIApiKey: OPENAI_API_KEY,
 });
 
-const directory = "temp/lanchain-ts-starter";
-let vectorStore;
+// Create a document loader for the GitHub repository
+const loader = new GithubRepoLoader(REPO_URL, {
+  branch: "main",
+  recursive: false,
+  unknown: "warn",
+});
 
-// Check if the vector store exists in the directory
+// Create a text splitter for breaking up documents into chunks
+const splitter = new RecursiveCharacterTextSplitter(SPLITTER_CONFIG);
+
+// Load or generate a vector store from the documents in the repository
+let vectorStore;
 try {
-  vectorStore = await HNSWLib.load(directory, new OpenAIEmbeddings());
+  vectorStore = await HNSWLib.load(VECTOR_STORE_DIR, new OpenAIEmbeddings());
 } catch (e) {
   console.log("Vector store not found in directory. Generating vector store from documents...");
   const docs = await loader.loadAndSplit(splitter);
   vectorStore = await HNSWLib.fromDocuments(docs, new OpenAIEmbeddings());
-  await vectorStore.save(directory);
+  await vectorStore.save(VECTOR_STORE_DIR);
 }
 
-const chain = ConversationalRetrievalQAChain.fromLLM(
-  model,
-  vectorStore.asRetriever()
-);
+// Create a conversational retrieval question-answering chain from the OpenAI model and vector store
+const chain = ConversationalRetrievalQAChain.fromLLM(model, vectorStore.asRetriever());
 
+// Ask a question and prompt for follow-up questions
 async function askQuestion(chatHistory: string[]) {
-  const question = prompt()("What is your question? "); // prompt the user for a question
+  const question = prompt(PROMPT_CONFIG)("What is your question? ");
   const res = await chain.call({ question, chat_history: chatHistory });
   console.log(res);
 
-  const followUpQuestion = prompt()("Any follow up questions? (y/n) "); // prompt the user for a follow-up question
+  const followUpQuestion = prompt(PROMPT_CONFIG)(FOLLOW_UP_QUESTION_PROMPT);
   if (followUpQuestion.toLowerCase() === 'y') {
-    const newChatHistory: string[] = [];
-    newChatHistory.push(...chatHistory);
-    newChatHistory.push(question);
-    newChatHistory.push(res.text);
-    await askQuestion(newChatHistory); // recursive call with updated chat history
+    const newChatHistory = [...chatHistory, question, res.text];
+    await askQuestion(newChatHistory);
   }
 }
 
+// Start the conversation with an empty chat history
 (async function () {
-  const chatHistory: string[] = [];
-  await askQuestion(chatHistory); // initial call with empty chat history
+  await askQuestion([]);
 })();
